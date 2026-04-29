@@ -1,13 +1,17 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import * as turf from '@turf/turf';
 import { useMapStore, VECTOR_GEOJSON_URL } from '@/store/mapStore';
+import { useAuthStore } from '@/store/authStore';
 import { ROUTE_CENTER, ROUTE_ZOOM, pointCloudSections } from '@/data/sections';
 import { BASEMAPS } from '@/data/basemaps';
 import photosData from '@/data/photos.json';
 import type { FeatureCollection, GeoJSON } from 'geojson';
 import type { GeoPhoto } from '@/types';
 import { areaToolBridge } from '@/map/areaToolBridge';
+import { canUserDeleteComment } from '@/lib/commentPermissions';
+import { deleteGeoBIMComment } from '@/services/geobimComments';
+import { isFirebaseConfigured } from '@/lib/firebase';
 
 const photos = photosData as GeoPhoto[];
 
@@ -15,14 +19,8 @@ const LAYER_GROUPS: Record<string, string[]> = {
   traza: ['traza-line-casing', 'traza-line'],
   secciones: ['section-fill', 'section-outline', 'section-label'],
   fotos: ['photos-circle', 'photos-icon'],
+  comentarios: ['comments-circle'],
 };
-
-function escHtml(s: string) {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/"/g, '&quot;');
-}
 
 function getLayerOpacity(
   layerId: string,
@@ -34,6 +32,7 @@ function getLayerOpacity(
 }
 
 export function MapView() {
+  const [mapReady, setMapReady] = useState(false);
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const distanceAnchorRef = useRef<[number, number] | null>(null);
@@ -434,20 +433,75 @@ export function MapView() {
         const feat = e.features[0];
         const p = feat.properties as {
           id?: string;
+          userId?: string;
           userName?: string;
           text?: string;
         };
         if (!p?.id) return;
         commentPopupRef.current?.remove();
-        const html = `<div style="max-width:240px;font:12px system-ui,sans-serif;color:#1a1a1a">
-          <div style="font-weight:600;margin-bottom:6px;color:#C8102E">${escHtml(p.userName ?? '')}</div>
-          <div style="white-space:pre-wrap;line-height:1.4">${escHtml(p.text ?? '')}</div>
-        </div>`;
-        const popup = new maplibregl.Popup({ closeButton: true, maxWidth: '280px' })
+
+        const full = useMapStore.getState().comments.find((c) => c.id === p.id);
+        const user = useAuthStore.getState().user;
+        const canDel = full ? canUserDeleteComment(user, full) : false;
+
+        const root = document.createElement('div');
+        root.style.maxWidth = '240px';
+        root.style.font = '12px system-ui, sans-serif';
+        root.style.color = '#1a1a1a';
+
+        const title = document.createElement('div');
+        title.style.fontWeight = '600';
+        title.style.marginBottom = '6px';
+        title.style.color = '#C8102E';
+        title.textContent = p.userName ?? '';
+        root.appendChild(title);
+
+        const body = document.createElement('div');
+        body.style.whiteSpace = 'pre-wrap';
+        body.style.lineHeight = '1.4';
+        body.textContent = p.text ?? '';
+        root.appendChild(body);
+
+        const popup = new maplibregl.Popup({
+          closeButton: true,
+          maxWidth: '280px',
+        })
           .setLngLat(e.lngLat)
-          .setHTML(html)
+          .setDOMContent(root)
           .addTo(map);
         commentPopupRef.current = popup;
+
+        if (canDel) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = 'Eliminar comentario';
+          btn.style.marginTop = '8px';
+          btn.style.fontSize = '11px';
+          btn.style.padding = '4px 8px';
+          btn.style.borderRadius = '6px';
+          btn.style.background = '#C8102E';
+          btn.style.color = '#fff';
+          btn.style.border = 'none';
+          btn.style.cursor = 'pointer';
+          btn.onclick = async (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            btn.disabled = true;
+            try {
+              if (isFirebaseConfigured()) {
+                await deleteGeoBIMComment(p.id!);
+              } else {
+                useMapStore.getState().removeComment(p.id!);
+              }
+              popup.remove();
+              commentPopupRef.current = null;
+            } catch {
+              btn.textContent = 'No se pudo eliminar';
+              btn.disabled = false;
+            }
+          };
+          root.appendChild(btn);
+        }
       });
       map.on('mouseenter', 'comments-circle', () => {
         if (activeToolRef.current === 'select') map.getCanvas().style.cursor = 'pointer';
@@ -522,6 +576,7 @@ export function MapView() {
         const opTraza = getLayerOpacity('traza', st);
         const opSec = getLayerOpacity('secciones', st);
         const opFotos = getLayerOpacity('fotos', st);
+        const opCom = getLayerOpacity('comentarios', st);
         if (map.getLayer('traza-line-casing')) {
           map.setPaintProperty('traza-line-casing', 'line-opacity', 0.35 * opTraza);
           map.setPaintProperty('traza-line', 'line-opacity', 0.95 * opTraza);
@@ -535,18 +590,49 @@ export function MapView() {
           map.setPaintProperty('photos-circle', 'circle-opacity', 0.95 * opFotos);
           map.setPaintProperty('photos-icon', 'text-opacity', opFotos);
         }
-        (['traza', 'secciones', 'fotos'] as const).forEach((layerId) => {
-          const ids = LAYER_GROUPS[layerId];
-          const vis = st.find((l) => l.id === layerId)?.visible
-            ? 'visible'
-            : 'none';
-          ids.forEach((id) => {
-            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
-          });
-        });
+        if (map.getLayer('comments-circle')) {
+          map.setPaintProperty('comments-circle', 'circle-opacity', 0.9 * opCom);
+        }
+        (['traza', 'secciones', 'fotos', 'comentarios'] as const).forEach(
+          (layerId) => {
+            const ids = LAYER_GROUPS[layerId];
+            const vis = st.find((l) => l.id === layerId)?.visible
+              ? 'visible'
+              : 'none';
+            ids.forEach((id) => {
+              if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
+            });
+          }
+        );
       };
 
-      map.once('idle', applyLayerPaint);
+      const syncCommentsLayer = () => {
+        const src = map.getSource('comments-src') as
+          | maplibregl.GeoJSONSource
+          | undefined;
+        if (!src) return;
+        const list = useMapStore.getState().comments;
+        const features = list.map((c) => ({
+          type: 'Feature' as const,
+          properties: {
+            id: c.id,
+            userId: c.userId,
+            userName: c.userName,
+            text: c.text,
+          },
+          geometry: {
+            type: 'Point' as const,
+            coordinates: c.coord,
+          },
+        }));
+        src.setData({ type: 'FeatureCollection', features });
+      };
+
+      map.once('idle', () => {
+        applyLayerPaint();
+        syncCommentsLayer();
+        setMapReady(true);
+      });
     });
 
     mapRef.current = map;
@@ -564,6 +650,7 @@ export function MapView() {
     window.addEventListener('temocsa-map-resize', onTemocsaResize);
 
     return () => {
+      setMapReady(false);
       ro?.disconnect();
       window.removeEventListener('temocsa-map-resize', onTemocsaResize);
       areaToolBridge.closePolygon = null;
@@ -599,6 +686,7 @@ export function MapView() {
     const opTraza = getLayerOpacity('traza', st);
     const opSec = getLayerOpacity('secciones', st);
     const opFotos = getLayerOpacity('fotos', st);
+    const opCom = getLayerOpacity('comentarios', st);
 
     if (map.getLayer('traza-line-casing')) {
       map.setPaintProperty('traza-line-casing', 'line-opacity', 0.35 * opTraza);
@@ -613,25 +701,34 @@ export function MapView() {
       map.setPaintProperty('photos-circle', 'circle-opacity', 0.95 * opFotos);
       map.setPaintProperty('photos-icon', 'text-opacity', opFotos);
     }
+    if (map.getLayer('comments-circle')) {
+      map.setPaintProperty('comments-circle', 'circle-opacity', 0.9 * opCom);
+    }
 
-    (['traza', 'secciones', 'fotos'] as const).forEach((layerId) => {
-      const ids = LAYER_GROUPS[layerId];
-      const vis = st.find((l) => l.id === layerId)?.visible ? 'visible' : 'none';
-      ids.forEach((id) => {
-        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
-      });
-    });
+    (['traza', 'secciones', 'fotos', 'comentarios'] as const).forEach(
+      (layerId) => {
+        const ids = LAYER_GROUPS[layerId];
+        const vis = st.find((l) => l.id === layerId)?.visible ? 'visible' : 'none';
+        ids.forEach((id) => {
+          if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
+        });
+      }
+    );
   }, [layers]);
 
   useEffect(() => {
+    if (!mapReady) return;
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) return;
+    const st = useMapStore.getState().layers;
+    const opCom = getLayerOpacity('comentarios', st);
     const src = map.getSource('comments-src') as maplibregl.GeoJSONSource | undefined;
     if (!src) return;
     const features = comments.map((c) => ({
       type: 'Feature' as const,
       properties: {
         id: c.id,
+        userId: c.userId,
         userName: c.userName,
         text: c.text,
       },
@@ -641,7 +738,14 @@ export function MapView() {
       },
     }));
     src.setData({ type: 'FeatureCollection', features });
-  }, [comments]);
+    if (map.getLayer('comments-circle')) {
+      map.setPaintProperty('comments-circle', 'circle-opacity', 0.9 * opCom);
+      const vis = st.find((l) => l.id === 'comentarios')?.visible
+        ? 'visible'
+        : 'none';
+      map.setLayoutProperty('comments-circle', 'visibility', vis);
+    }
+  }, [comments, layers, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;

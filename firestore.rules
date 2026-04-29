@@ -7,6 +7,10 @@ service cloud.firestore {
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid;
       allow update: if request.auth != null;
+      // Propietario o admin@temocsa.com (ajusta el correo si cambia el admin).
+      allow delete: if request.auth != null
+        && (resource.data.userId == request.auth.uid
+            || request.auth.token.email == 'admin@temocsa.com');
     }
 
     // Catálogo de usuarios para el panel admin (solo lectura desde la app; edita en consola).

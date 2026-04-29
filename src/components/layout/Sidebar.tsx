@@ -12,6 +12,7 @@ import {
   Route,
   Radar,
   MessageSquarePlus,
+  MessageSquare,
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -29,6 +30,7 @@ export function Sidebar() {
     traza: <Route className="w-3.5 h-3.5" />,
     secciones: <Radar className="w-3.5 h-3.5" />,
     fotos: <Camera className="w-3.5 h-3.5" />,
+    comentarios: <MessageSquare className="w-3.5 h-3.5" />,
   };
 
   const tools = [

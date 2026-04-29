@@ -41,7 +41,7 @@ export interface PointCloudSection {
 export interface LayerConfig {
   id: string;
   name: string;
-  type: 'vector' | 'raster' | 'pointcloud' | 'photos';
+  type: 'vector' | 'raster' | 'pointcloud' | 'photos' | 'comments';
   visible: boolean;
   opacity: number;
   source?: string;

@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   onSnapshot,
   setDoc,
@@ -95,4 +96,9 @@ export async function createGeoBIMComment(comment: GeoBIMComment): Promise<void>
 export async function resolveGeoBIMComment(commentId: string): Promise<void> {
   const db = getFirestoreDb();
   await updateDoc(doc(db, COLLECTION, commentId), { resolved: true });
+}
+
+export async function deleteGeoBIMComment(commentId: string): Promise<void> {
+  const db = getFirestoreDb();
+  await deleteDoc(doc(db, COLLECTION, commentId));
 }

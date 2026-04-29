@@ -35,6 +35,7 @@ interface MapState {
   setSelectedPhoto: (photo: GeoPhoto | null) => void;
   setComments: (comments: GeoBIMComment[]) => void;
   addComment: (comment: GeoBIMComment) => void;
+  removeComment: (commentId: string) => void;
   resolveComment: (commentId: string) => void;
   toggleSidebar: () => void;
   setActiveTool: (tool: MapState['activeTool'] | null) => void;
@@ -74,6 +75,14 @@ export const useMapStore = create<MapState>()(
           opacity: 1,
           color: '#F39C12',
         },
+        {
+          id: 'comentarios',
+          name: 'Comentarios GeoBIM',
+          type: 'comments',
+          visible: true,
+          opacity: 1,
+          color: '#9B59B6',
+        },
       ],
       basemapId: defaultBasemap,
       selectedSection: null,
@@ -112,6 +121,10 @@ export const useMapStore = create<MapState>()(
       setComments: (comments) => set({ comments }),
       addComment: (comment) =>
         set((state) => ({ comments: [...state.comments, comment] })),
+      removeComment: (commentId) =>
+        set((state) => ({
+          comments: state.comments.filter((c) => c.id !== commentId),
+        })),
       resolveComment: (commentId) =>
         set((state) => ({
           comments: state.comments.map((c) =>
