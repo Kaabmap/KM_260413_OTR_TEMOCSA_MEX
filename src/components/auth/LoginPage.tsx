@@ -14,9 +14,9 @@ export function LoginPage() {
     setError('');
     setLoading(true);
 
-    const success = await login(email, password);
-    if (!success) {
-      setError('Credenciales inválidas. Verifique su correo y contraseña.');
+    const result = await login(email, password);
+    if (!result.ok) {
+      setError(result.message);
     }
     setLoading(false);
   };
@@ -125,7 +125,7 @@ export function LoginPage() {
                   key={cred.role}
                   type="button"
                   onClick={() => {
-                    setEmail(cred.email);
+                    setEmail(cred.email.trim().toLowerCase());
                     setPassword(cred.pass);
                   }}
                   className="w-full flex justify-between items-center px-3 py-2 rounded-md hover:bg-temocsa-gray-700/50 transition-colors cursor-pointer"

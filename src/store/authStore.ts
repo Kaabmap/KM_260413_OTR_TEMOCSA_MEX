@@ -6,6 +6,7 @@ import {
   signOut,
   type User as FirebaseUser,
 } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
 import type { User, UserRole } from '@/types';
 import { useProjectStore } from '@/store/projectStore';
 import { DEMO_USER_PROFILES_BY_EMAIL } from '@/data/demoUserProfiles';
@@ -41,12 +42,48 @@ const DEMO_USERS: Record<string, { password: string; user: User }> = {
   },
 };
 
+function firebaseLoginErrorMessage(err: unknown): string {
+  if (err instanceof FirebaseError) {
+    const { code, message } = err;
+    switch (code) {
+      case 'auth/invalid-credential':
+      case 'auth/wrong-password':
+      case 'auth/user-not-found':
+      case 'auth/invalid-login-credentials':
+        return 'Correo o contraseña incorrectos. Si acabas de crear el usuario en Firebase, revisa que la contraseña sea exactamente la misma (mayúsculas y minúsculas).';
+      case 'auth/invalid-email':
+        return 'El formato del correo no es válido.';
+      case 'auth/user-disabled':
+        return 'Esta cuenta está deshabilitada en Firebase.';
+      case 'auth/too-many-requests':
+        return 'Demasiados intentos. Espera unos minutos o restablece la contraseña en la consola de Firebase.';
+      case 'auth/operation-not-allowed':
+        return 'Inicio con correo y contraseña no está activado. En Firebase: Authentication → Sign-in method → Correo/contraseña.';
+      case 'auth/invalid-api-key':
+        return 'API key de Firebase no válida o con restricciones incorrectas en Google Cloud Console.';
+      default:
+        if (
+          message.includes('API key') ||
+          message.includes('blocked') ||
+          message.includes('BILLING_DISABLED')
+        ) {
+          return `Error de configuración en Firebase (${code}). Revisa restricciones de la API key y facturación del proyecto.`;
+        }
+        return `No se pudo iniciar sesión (${code}).`;
+    }
+  }
+  return 'No se pudo iniciar sesión. Revisa la consola del navegador (pestaña Red) para más detalle.';
+}
+
 interface AuthState {
   /** Listo para mostrar login / sesión (Firebase espera primer evento; demo tras rehidratación). */
   authReady: boolean;
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ ok: true } | { ok: false; message: string }>;
   logout: () => void;
   hasPermission: (requiredRole: UserRole) => boolean;
 }
@@ -113,26 +150,32 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       login: async (email: string, password: string) => {
+        const emailNorm = email.trim().toLowerCase();
         if (isFirebaseConfigured()) {
           try {
             await signInWithEmailAndPassword(
               getFirebaseAuth(),
-              email,
+              emailNorm,
               password
             );
-            return true;
-          } catch {
-            return false;
+            return { ok: true };
+          } catch (e) {
+            console.warn('[auth]', e);
+            return { ok: false, message: firebaseLoginErrorMessage(e) };
           }
         }
 
         await new Promise((r) => setTimeout(r, 500));
-        const entry = DEMO_USERS[email];
+        const entry = DEMO_USERS[emailNorm];
         if (entry && entry.password === password) {
           set({ user: entry.user, isAuthenticated: true });
-          return true;
+          return { ok: true };
         }
-        return false;
+        return {
+          ok: false,
+          message:
+            'Credenciales inválidas. Verifique su correo y contraseña.',
+        };
       },
 
       logout: () => {
