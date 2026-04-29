@@ -11,7 +11,7 @@ export function ToolStatusBar() {
   if (activeTool === 'select') return null;
 
   return (
-    <div className="absolute bottom-24 left-1/2 z-[45] max-w-lg -translate-x-1/2 rounded-lg border border-temocsa-gray-600 bg-temocsa-gray-900/95 px-4 py-2 text-center text-xs text-temocsa-gray-200 shadow-lg backdrop-blur-sm">
+    <div className="absolute bottom-20 left-1/2 z-[45] w-[calc(100%-1rem)] max-w-lg -translate-x-1/2 rounded-lg border border-temocsa-gray-600 bg-temocsa-gray-900/95 px-3 py-2 text-center text-xs text-temocsa-gray-200 shadow-lg backdrop-blur-sm sm:bottom-24 sm:w-auto sm:px-4">
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-3">
           <p className="flex-1 text-left">{measureStatus ?? '…'}</p>

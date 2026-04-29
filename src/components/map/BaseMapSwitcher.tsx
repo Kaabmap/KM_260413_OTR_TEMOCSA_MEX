@@ -6,7 +6,7 @@ export function BaseMapSwitcher() {
   const setBasemapId = useMapStore((s) => s.setBasemapId);
 
   return (
-    <div className="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 gap-2 rounded-full border border-temocsa-gray-700 bg-temocsa-gray-900/90 px-2 py-2 shadow-lg backdrop-blur-sm">
+    <div className="absolute bottom-3 left-1/2 z-50 flex -translate-x-1/2 gap-1.5 rounded-full border border-temocsa-gray-700 bg-temocsa-gray-900/90 px-1.5 py-1.5 shadow-lg backdrop-blur-sm sm:bottom-4 sm:gap-2 sm:px-2 sm:py-2">
       {BASEMAPS.map((bm) => {
         const active = basemapId === bm.id;
         return (
@@ -15,7 +15,7 @@ export function BaseMapSwitcher() {
             type="button"
             title={bm.label}
             onClick={() => setBasemapId(bm.id)}
-            className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 transition-all ${
+            className={`relative h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 transition-all sm:h-12 sm:w-12 ${
               active
                 ? 'border-temocsa-red ring-2 ring-temocsa-red/40'
                 : 'border-temocsa-gray-600 opacity-80 hover:opacity-100'

@@ -33,7 +33,7 @@ const STATS = [
 
 export function DashboardOverlay() {
   return (
-    <div className="absolute top-3 left-3 z-30 flex flex-col gap-2">
+    <div className="absolute left-3 top-3 z-30 hidden flex-col gap-2 lg:flex">
       {STATS.map((stat) => {
         const Icon = stat.icon;
         return (

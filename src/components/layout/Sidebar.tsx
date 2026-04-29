@@ -22,6 +22,7 @@ export function Sidebar() {
   const setLayerOpacity = useMapStore((s) => s.setLayerOpacity);
   const activeTool = useMapStore((s) => s.activeTool);
   const setActiveTool = useMapStore((s) => s.setActiveTool);
+  const toggleSidebar = useMapStore((s) => s.toggleSidebar);
   const user = useAuthStore((s) => s.user);
 
   if (!sidebarOpen) return null;
@@ -53,13 +54,20 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-72 bg-temocsa-gray-800 border-r border-temocsa-gray-700 flex flex-col shrink-0 overflow-hidden">
+    <>
+      <button
+        type="button"
+        className="fixed inset-0 z-30 bg-black/50 md:hidden"
+        aria-label="Cerrar panel lateral"
+        onClick={toggleSidebar}
+      />
+      <aside className="fixed inset-y-0 left-0 z-40 flex w-[85vw] max-w-80 flex-col overflow-hidden border-r border-temocsa-gray-700 bg-temocsa-gray-800 md:relative md:z-0 md:w-72 md:max-w-none md:shrink-0">
       {/* Tools */}
       <div className="p-3 border-b border-temocsa-gray-700">
         <h3 className="text-xs font-semibold text-temocsa-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
           <PenSquare className="w-3 h-3" /> Herramientas
         </h3>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-2">
           {tools.map((tool) => {
             const Icon = tool.icon;
             const isActive = activeTool === tool.id;
@@ -67,7 +75,7 @@ export function Sidebar() {
               <button
                 key={tool.id}
                 onClick={() => setActiveTool(isActive ? null : tool.id)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
+                className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-xs transition-colors ${
                   isActive
                     ? 'bg-temocsa-red text-white'
                     : 'bg-temocsa-gray-700 text-temocsa-gray-300 hover:bg-temocsa-gray-600'
@@ -75,7 +83,7 @@ export function Sidebar() {
                 title={tool.label}
               >
                 <Icon className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">{tool.label}</span>
+                <span>{tool.label}</span>
               </button>
             );
           })}
@@ -150,6 +158,7 @@ export function Sidebar() {
           Kaab Map · Geomática Aplicada
         </p>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

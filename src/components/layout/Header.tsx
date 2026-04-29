@@ -35,12 +35,12 @@ export function Header() {
   const RoleIcon = roleInfo.icon;
 
   return (
-    <header className="h-12 bg-temocsa-gray-800 border-b border-temocsa-gray-700 flex items-center justify-between px-4 shrink-0 z-50">
+    <header className="z-50 flex h-14 shrink-0 items-center justify-between border-b border-temocsa-gray-700 bg-temocsa-gray-800 px-3 sm:h-12 sm:px-4">
       {/* Left */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <button
           onClick={toggleSidebar}
-          className="p-1.5 hover:bg-temocsa-gray-700 rounded-md transition-colors"
+          className="rounded-md p-2 transition-colors hover:bg-temocsa-gray-700"
           title={sidebarOpen ? 'Colapsar panel' : 'Expandir panel'}
         >
           {sidebarOpen ? (
@@ -51,10 +51,10 @@ export function Header() {
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-temocsa-red rounded-lg flex items-center justify-center">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-temocsa-red">
             <MapPin className="w-4 h-4 text-white" />
           </div>
-          <div className="hidden sm:block">
+          <div>
             <h1 className="text-sm font-bold text-white leading-tight">
               TEMOCSA <span className="text-temocsa-red">Geoportal</span>
             </h1>
@@ -63,7 +63,7 @@ export function Header() {
       </div>
 
       {/* Center */}
-      <div className="hidden max-w-md flex-1 items-center justify-center gap-2 md:flex">
+      <div className="hidden max-w-md flex-1 items-center justify-center gap-2 lg:flex">
         <span className="truncate rounded-md bg-temocsa-gray-700 px-2 py-1 text-xs font-medium text-temocsa-gray-200">
           {project?.name ?? 'Proyecto'}
         </span>
@@ -79,16 +79,17 @@ export function Header() {
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <div className="flex items-center gap-2">
           <RoleIcon className={`w-3.5 h-3.5 ${roleInfo.color}`} />
-          <span className="text-xs text-temocsa-gray-300 hidden sm:inline">
+          <span className="hidden text-xs text-temocsa-gray-300 md:inline">
             {user.name}
           </span>
           <span
             className={`text-xs px-1.5 py-0.5 rounded ${roleInfo.color} bg-temocsa-gray-700`}
           >
-            {roleInfo.label}
+            <span className="hidden sm:inline">{roleInfo.label}</span>
+            <span className="sm:hidden">{user.role}</span>
           </span>
         </div>
 

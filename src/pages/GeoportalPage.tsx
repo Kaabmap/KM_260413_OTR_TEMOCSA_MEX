@@ -22,6 +22,8 @@ function notifyMapResize() {
 
 export function GeoportalPage() {
   const [showAdmin, setShowAdmin] = useState(false);
+  const sidebarOpen = useMapStore((s) => s.sidebarOpen);
+  const toggleSidebar = useMapStore((s) => s.toggleSidebar);
   const showPotree = useMapStore((s) => s.showPotreeViewer);
   const potreeUiMode = useMapStore((s) => s.potreeUiMode);
 
@@ -37,6 +39,14 @@ export function GeoportalPage() {
       useMapStore.getState().setComments(list);
     });
     return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (window.innerWidth < 768 && sidebarOpen) {
+      toggleSidebar();
+    }
+    // Solo al montar para no forzar cierres al rotar pantalla.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (showAdmin) {
