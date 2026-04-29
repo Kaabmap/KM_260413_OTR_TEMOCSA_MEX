@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Potree — nube de puntos</title>
+  <!-- Misma carpeta que este HTML: build/ y libs/ del zip Potree 1.8.2 (workers deben ser mismo origen que la página) -->
+  <link rel="stylesheet" type="text/css" href="build/potree/potree.css" />
+  <link rel="stylesheet" type="text/css" href="libs/jquery-ui/jquery-ui.min.css" />
+  <link rel="stylesheet" type="text/css" href="libs/openlayers3/ol.css" />
+  <link rel="stylesheet" type="text/css" href="libs/spectrum/spectrum.css" />
+  <link rel="stylesheet" type="text/css" href="libs/jstree/themes/mixed/style.css" />
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
+    .potree_container { position: absolute; width: 100%; height: 100%; left: 0; top: 0; }
+    #potree_render_area { width: 100%; height: 100%; }
+    #potree-error {
+      display: none; position: absolute; inset: 0; align-items: center; justify-content: center;
+      flex-direction: column; background: #1a1a1a; color: #b0b0b0; font: 13px system-ui, sans-serif;
+      padding: 24px; text-align: center; z-index: 9999;
+    }
+    #potree-error.visible { display: flex; }
+    #potree-error code { color: #e8344d; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="potree-error">
+    <p><strong>No se pudo cargar Potree o la nube de puntos.</strong></p>
+    <p style="margin-top:8px;">Comprueba la consola. Si usas extensiones (cartera, privacidad), prueba en ventana privada.</p>
+    <p id="potree-error-detail" style="margin-top:8px;font-size:12px;max-width:520px;"></p>
+    <p style="margin-top:8px;font-size:11px;">Hacen falta <strong>tres</strong> archivos: <code>metadata.json</code>, <code>hierarchy.bin</code>, <code>octree.bin</code>. El servidor debe permitir <strong>HTTP Range</strong> sobre los .bin.</p>
+  </div>
+
+  <!-- El contenedor debe existir ANTES de ejecutar Potree -->
+  <div class="potree_container">
+    <div id="potree_render_area"></div>
+    <div id="potree_sidebar_container"></div>
+  </div>
+
+  <script>
+    (function () {
+      // Rutas relativas a este HTML → mismo origen que localhost; los Workers de Potree no pueden cargarse desde otro dominio
+      var scripts = [
+        'libs/jquery/jquery-3.1.1.min.js',
+        'libs/three.js/build/three.min.js',
+        'libs/spectrum/spectrum.js',
+        'libs/jquery-ui/jquery-ui.min.js',
+        'libs/other/BinaryHeap.js',
+        'libs/tween/tween.min.js',
+        'libs/d3/d3.js',
+        'libs/proj4/proj4.js',
+        'libs/openlayers3/ol.js',
+        'libs/i18next/i18next.js',
+        'libs/jstree/jstree.js',
+        'build/potree/potree.js',
+        'libs/plasio/js/laslaz.js'
+      ];
+
+      function showErr(e) {
+        console.error(e);
+        var el = document.getElementById('potree-error');
+        if (el) el.classList.add('visible');
+      }
+
+      function loadScript(i) {
+        if (i >= scripts.length) {
+          try {
+            startPotree();
+          } catch (err) {
+            showErr(err);
+          }
+          return;
+        }
+        var s = document.createElement('script');
+        s.src = scripts[i];
+        s.async = false;
+        s.onload = function () { loadScript(i + 1); };
+        s.onerror = function () { showErr(new Error('No se cargó: ' + scripts[i])); };
+        document.head.appendChild(s);
+      }
+
+      function startPotree() {
+        if (typeof Potree === 'undefined' || typeof THREE === 'undefined') {
+          showErr(new Error('Potree o THREE no están definidos tras cargar scripts.'));
+          return;
+        }
+
+        var params = new URLSearchParams(window.location.search);
+        var rel = params.get('metadata') || '/data/pointclouds/seccion_1/metadata.json';
+        var metadataUrl = rel.indexOf('http') === 0 ? rel : (window.location.origin + rel);
+        var baseUrl = metadataUrl.substring(0, metadataUrl.lastIndexOf('/') + 1);
+
+        var el = document.getElementById('potree_render_area');
+        if (!el) {
+          showErr(new Error('Falta #potree_render_area'));
+          return;
+        }
+
+        function runViewer() {
+          window.viewer = new Potree.Viewer(el);
+          viewer.setEDLEnabled(true);
+          viewer.setFOV(60);
+          viewer.setPointBudget(4 * 1000 * 1000);
+          viewer.setBackground('gradient');
+
+          viewer.loadGUI(function () {
+            try {
+              viewer.setLanguage('es');
+            } catch (e) {}
+          });
+
+          Potree.loadPointCloud(metadataUrl, 'nube', function (e) {
+            var scene = viewer.scene;
+            var pointcloud = e.pointcloud;
+            var material = pointcloud.material;
+            material.size = 1;
+            material.pointSizeType = Potree.PointSizeType.ADAPTIVE;
+            material.shape = Potree.PointShape.SQUARE;
+            if (material.activeAttributeName !== undefined) {
+              try {
+                material.activeAttributeName = 'rgba';
+              } catch (e2) {
+                try { material.activeAttributeName = 'rgb'; } catch (e3) {}
+              }
+            }
+            scene.addPointCloud(pointcloud);
+            viewer.fitToScreen();
+          });
+        }
+
+        fetch(baseUrl + 'hierarchy.bin', { method: 'HEAD' })
+          .then(function (res) {
+            if (!res.ok) {
+              var detail = document.getElementById('potree-error-detail');
+              if (detail) {
+                detail.innerHTML =
+                  'No se encontró <code>hierarchy.bin</code> (código ' + res.status + '). ' +
+                  'PotreeConverter 2.x debe generar <strong>tres</strong> archivos en la misma carpeta: ' +
+                  'metadata.json, hierarchy.bin y octree.bin. Vuelve a convertir y copia los tres a ' +
+                  '<code>public/data/pointclouds/seccion_1/</code>. Prueba: ' +
+                  '<a href="/potree/diagnostico.html" style="color:#5dade2">/potree/diagnostico.html</a>';
+              }
+              showErr(new Error('Falta hierarchy.bin'));
+              return;
+            }
+            runViewer();
+          })
+          .catch(function (err) {
+            console.error(err);
+            var detail = document.getElementById('potree-error-detail');
+            if (detail) detail.textContent = String(err);
+            showErr(err);
+          });
+      }
+
+      loadScript(0);
+    })();
+  </script>
+</body>
+</html>

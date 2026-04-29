@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@theme {
+  /* TEMOCSA Corporate Colors */
+  --color-temocsa-red: #C8102E;
+  --color-temocsa-red-dark: #9B0D23;
+  --color-temocsa-red-light: #E8344D;
+  --color-temocsa-crimson: #A30B2E;
+  
+  --color-temocsa-gray-900: #1A1A1A;
+  --color-temocsa-gray-800: #2D2D2D;
+  --color-temocsa-gray-700: #3D3D3D;
+  --color-temocsa-gray-600: #4A4A4A;
+  --color-temocsa-gray-500: #6B6B6B;
+  --color-temocsa-gray-400: #8C8C8C;
+  --color-temocsa-gray-300: #B0B0B0;
+  --color-temocsa-gray-200: #D4D4D4;
+  --color-temocsa-gray-100: #F0F0F0;
+  
+  --color-temocsa-steel: #2C3E50;
+  --color-temocsa-steel-light: #34495E;
+  --color-temocsa-accent: #E74C3C;
+  --color-temocsa-success: #27AE60;
+  --color-temocsa-warning: #F39C12;
+  --color-temocsa-info: #3498DB;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.maplibregl-map {
+  width: 100%;
+  height: 100%;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-temocsa-gray-900);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-temocsa-gray-600);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-temocsa-gray-500);
+}
+
+/* Pulso tipo sonar en comentario recién creado (marcador HTML) */
+.comment-pulse-wrap {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.comment-pulse-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #9b59b6;
+  border: 2px solid #fff;
+  box-shadow: 0 0 8px rgba(155, 89, 182, 0.9);
+  z-index: 2;
+}
+.comment-pulse-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  border: 2px solid rgba(155, 89, 182, 0.55);
+  animation: comment-sonar 2s ease-out infinite;
+}
+.comment-pulse-ring--delay {
+  animation-delay: 0.9s;
+}
+@keyframes comment-sonar {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
