@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:firestore": "firebase deploy --only firestore",
+    "deploy:all": "firebase deploy --only hosting,firestore"
   },
   "dependencies": {
     "@turf/turf": "^7.3.4",
@@ -30,6 +33,7 @@
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "firebase-tools": "^14.0.0",
     "globals": "^17.4.0",
     "tailwindcss": "^4.2.2",
     "typescript": "~6.0.2",
