@@ -44,7 +44,8 @@ interface MapState {
   setPulseCommentId: (id: string | null) => void;
 }
 
-const defaultBasemap = BASEMAPS[0]?.id ?? 'carto-dark';
+const defaultBasemap =
+  BASEMAPS.find((b) => b.id === 'esri-sat')?.id ?? BASEMAPS[0]?.id ?? 'esri-sat';
 
 export const useMapStore = create<MapState>()(
   persist(

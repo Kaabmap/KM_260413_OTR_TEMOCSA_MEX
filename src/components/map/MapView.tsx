@@ -55,6 +55,9 @@ export function MapView() {
 
   const activeToolRef = useRef(activeTool);
   activeToolRef.current = activeTool;
+  const autoRotateRafRef = useRef<number | null>(null);
+  const autoRotateLastTsRef = useRef<number | null>(null);
+  const autoRotateActiveRef = useRef(true);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -85,9 +88,14 @@ export function MapView() {
       },
       center: ROUTE_CENTER,
       zoom: ROUTE_ZOOM,
+      pitch: 52,
+      bearing: -18,
       maxZoom: 20,
       attributionControl: false,
     });
+
+    map.dragRotate.enable();
+    map.touchZoomRotate.enableRotation();
 
     map.addControl(
       new maplibregl.AttributionControl({ compact: true }),
@@ -125,6 +133,8 @@ export function MapView() {
       } catch {
         /* default view */
       }
+      map.setPitch(52);
+      map.setBearing(-18);
 
       map.addSource('traza-geo', { type: 'geojson', data: trazaData });
 
@@ -635,6 +645,33 @@ export function MapView() {
       });
     });
 
+    const stopAutoRotate = () => {
+      autoRotateActiveRef.current = false;
+      if (autoRotateRafRef.current != null) {
+        cancelAnimationFrame(autoRotateRafRef.current);
+        autoRotateRafRef.current = null;
+      }
+    };
+
+    const onInteraction = () => stopAutoRotate();
+    map.on('mousedown', onInteraction);
+    map.on('touchstart', onInteraction);
+    map.on('wheel', onInteraction);
+    map.on('dragstart', onInteraction);
+    map.on('rotatestart', onInteraction);
+    map.on('pitchstart', onInteraction);
+
+    const animateAutoRotate = (ts: number) => {
+      if (!autoRotateActiveRef.current) return;
+      const last = autoRotateLastTsRef.current ?? ts;
+      const dt = Math.min(50, ts - last);
+      autoRotateLastTsRef.current = ts;
+      const degPerSec = 4;
+      map.setBearing(map.getBearing() + (degPerSec * dt) / 1000);
+      autoRotateRafRef.current = requestAnimationFrame(animateAutoRotate);
+    };
+    autoRotateRafRef.current = requestAnimationFrame(animateAutoRotate);
+
     mapRef.current = map;
 
     const container = mapContainer.current;
@@ -650,6 +687,13 @@ export function MapView() {
     window.addEventListener('temocsa-map-resize', onTemocsaResize);
 
     return () => {
+      stopAutoRotate();
+      map.off('mousedown', onInteraction);
+      map.off('touchstart', onInteraction);
+      map.off('wheel', onInteraction);
+      map.off('dragstart', onInteraction);
+      map.off('rotatestart', onInteraction);
+      map.off('pitchstart', onInteraction);
       setMapReady(false);
       ro?.disconnect();
       window.removeEventListener('temocsa-map-resize', onTemocsaResize);
