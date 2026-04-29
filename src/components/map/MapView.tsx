@@ -658,8 +658,6 @@ export function MapView() {
     map.on('touchstart', onInteraction);
     map.on('wheel', onInteraction);
     map.on('dragstart', onInteraction);
-    map.on('rotatestart', onInteraction);
-    map.on('pitchstart', onInteraction);
 
     const animateAutoRotate = (ts: number) => {
       if (!autoRotateActiveRef.current) return;
@@ -692,8 +690,6 @@ export function MapView() {
       map.off('touchstart', onInteraction);
       map.off('wheel', onInteraction);
       map.off('dragstart', onInteraction);
-      map.off('rotatestart', onInteraction);
-      map.off('pitchstart', onInteraction);
       setMapReady(false);
       ro?.disconnect();
       window.removeEventListener('temocsa-map-resize', onTemocsaResize);
