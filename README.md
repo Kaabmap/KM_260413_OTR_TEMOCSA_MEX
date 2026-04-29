@@ -28,9 +28,9 @@ Abre http://localhost:5173 y usa las credenciales de demo:
 
 | Rol | Email | Contraseña |
 |---|---|---|
-| Admin | admin@temocsa.com | admin123 |
-| Editor | editor@temocsa.com | editor123 |
-| Visor | visor@temocsa.com | visor123 |
+| Admin | admin@temocsa.com | AdminTemocsa |
+| Editor | editor@temocsa.com | EditorTemocsa |
+| Visor | visor@temocsa.com | VisorTemocsa |
 
 ## Estructura del Proyecto
 

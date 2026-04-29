@@ -13,7 +13,7 @@ import { getFirebaseAuth, isFirebaseConfigured } from '@/lib/firebase';
 
 const DEMO_USERS: Record<string, { password: string; user: User }> = {
   'admin@temocsa.com': {
-    password: 'admin123',
+    password: 'AdminTemocsa',
     user: {
       id: '1',
       name: 'Administrador TEMOCSA',
@@ -22,7 +22,7 @@ const DEMO_USERS: Record<string, { password: string; user: User }> = {
     },
   },
   'editor@temocsa.com': {
-    password: 'editor123',
+    password: 'EditorTemocsa',
     user: {
       id: '2',
       name: 'Ing. Carlos Mendoza',
@@ -31,7 +31,7 @@ const DEMO_USERS: Record<string, { password: string; user: User }> = {
     },
   },
   'visor@temocsa.com': {
-    password: 'visor123',
+    password: 'VisorTemocsa',
     user: {
       id: '3',
       name: 'Consultor Externo',

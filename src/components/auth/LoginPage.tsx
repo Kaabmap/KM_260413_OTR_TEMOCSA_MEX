@@ -117,9 +117,9 @@ export function LoginPage() {
             </p>
             <div className="space-y-1.5 text-xs text-temocsa-gray-400">
               {[
-                { role: 'Admin', email: 'admin@temocsa.com', pass: 'admin123' },
-                { role: 'Editor', email: 'editor@temocsa.com', pass: 'editor123' },
-                { role: 'Visor', email: 'visor@temocsa.com', pass: 'visor123' },
+                { role: 'Admin', email: 'admin@temocsa.com', pass: 'AdminTemocsa' },
+                { role: 'Editor', email: 'editor@temocsa.com', pass: 'EditorTemocsa' },
+                { role: 'Visor', email: 'visor@temocsa.com', pass: 'VisorTemocsa' },
               ].map((cred) => (
                 <button
                   key={cred.role}
