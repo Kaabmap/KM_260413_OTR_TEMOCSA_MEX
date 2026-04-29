@@ -6,7 +6,7 @@ import {
   updateDoc,
   type Unsubscribe,
 } from 'firebase/firestore';
-import { getFirestoreDb } from '@/lib/firebase';
+import { getFirebaseAuth, getFirestoreDb } from '@/lib/firebase';
 import type { GeoBIMComment } from '@/types';
 
 const COLLECTION = 'geobim_comments';
@@ -73,15 +73,23 @@ export function subscribeGeoBIMComments(
 
 export async function createGeoBIMComment(comment: GeoBIMComment): Promise<void> {
   const db = getFirestoreDb();
-  await setDoc(doc(db, COLLECTION, comment.id), {
-    userId: comment.userId,
+  const uid = getFirebaseAuth().currentUser?.uid;
+  if (!uid) {
+    throw new Error('No hay sesión de Firebase. Vuelve a iniciar sesión.');
+  }
+  // Las reglas exigen userId == request.auth.uid; siempre usar el UID de Auth.
+  const payload: Record<string, unknown> = {
+    userId: uid,
     userName: comment.userName,
     coord: comment.coord,
     text: comment.text,
     createdAt: comment.createdAt,
-    resolved: comment.resolved,
-    section: comment.section ?? null,
-  });
+    resolved: false,
+  };
+  if (comment.section) {
+    payload.section = comment.section;
+  }
+  await setDoc(doc(db, COLLECTION, comment.id), payload);
 }
 
 export async function resolveGeoBIMComment(commentId: string): Promise<void> {

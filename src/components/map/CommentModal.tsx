@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMapStore } from '@/store/mapStore';
 import { useAuthStore } from '@/store/authStore';
 import { X, MessageSquare } from 'lucide-react';
+import { FirebaseError } from 'firebase/app';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { createGeoBIMComment } from '@/services/geobimComments';
 
@@ -51,10 +52,22 @@ export function CommentModal() {
       setText('');
       setCommentDraftCoord(null);
       setActiveTool('select');
-    } catch {
-      setError(
-        'No se pudo guardar el comentario. Revisa Firestore y las reglas de seguridad.'
-      );
+    } catch (e) {
+      if (e instanceof FirebaseError) {
+        if (e.code === 'permission-denied') {
+          setError(
+            'Permiso denegado en Firestore. Ejecuta en el proyecto: firebase deploy --only firestore y comprueba que inicies sesión con la misma cuenta.'
+          );
+        } else {
+          setError(`${e.message} (${e.code})`);
+        }
+      } else if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError(
+          'No se pudo guardar el comentario. Revisa Firestore y las reglas de seguridad.'
+        );
+      }
     } finally {
       setSaving(false);
     }

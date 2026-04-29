@@ -3,9 +3,9 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /geobim_comments/{commentId} {
       allow read: if request.auth != null;
+      // userId debe coincidir con el UID del token (la app escribe siempre el UID de Auth).
       allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.resolved == false;
+        && request.resource.data.userId == request.auth.uid;
       allow update: if request.auth != null;
     }
 
