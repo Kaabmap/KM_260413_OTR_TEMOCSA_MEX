@@ -42,9 +42,21 @@ const DEMO_USERS: Record<string, { password: string; user: User }> = {
   },
 };
 
+const API_KEY_HELP =
+  'Revisa: (1) En Firebase → Configuración → tu app Web, copia de nuevo el campo apiKey al .env como VITE_FIREBASE_API_KEY (sin espacios ni comillas). (2) En Google Cloud → APIs y servicios → Credenciales, edita la clave de tipo “Clave de API del navegador”: en “Restricciones de sitios web” añade https://*.web.app/* y https://*.firebaseapp.com/* (o deja “Ninguno” solo para probar). (3) En “Restricciones de API” permite “Identity Toolkit API” o “No restringir”. (4) npm run build y vuelve a desplegar.';
+
 function firebaseLoginErrorMessage(err: unknown): string {
   if (err instanceof FirebaseError) {
     const { code, message } = err;
+    const msgLower = message.toLowerCase();
+    if (
+      code.includes('api-key') ||
+      code === 'auth/invalid-api-key' ||
+      msgLower.includes('api key') ||
+      msgLower.includes('api-key')
+    ) {
+      return `La API key de Firebase no es válida o está bloqueada para este sitio. ${API_KEY_HELP}`;
+    }
     switch (code) {
       case 'auth/invalid-credential':
       case 'auth/wrong-password':
