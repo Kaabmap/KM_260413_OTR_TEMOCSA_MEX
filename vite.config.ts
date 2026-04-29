@@ -22,6 +22,10 @@ function potreeRangeHeaders() {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), potreeRangeHeaders()],
+  build: {
+    // MapLibre + Turf + Firebase en un solo chunk; sin code-splitting suele pasar ~1.6 MB.
+    chunkSizeWarningLimit: 2048,
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
