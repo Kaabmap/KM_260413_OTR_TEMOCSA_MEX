@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /geobim_comments/{commentId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.resolved == false;
+      allow update: if request.auth != null;
+    }
+
+    // Catálogo de usuarios para el panel admin (solo lectura desde la app; edita en consola).
+    match /app_users/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { MapView } from '@/components/map/MapView';
@@ -11,6 +11,8 @@ import { PhotoModal } from '@/components/photos/PhotoModal';
 import { DashboardOverlay } from '@/components/dashboard/DashboardOverlay';
 import { AdminPanel } from '@/components/admin/AdminPanel';
 import { useMapStore } from '@/store/mapStore';
+import { isFirebaseConfigured } from '@/lib/firebase';
+import { subscribeGeoBIMComments } from '@/services/geobimComments';
 
 function notifyMapResize() {
   requestAnimationFrame(() => {
@@ -28,6 +30,14 @@ export function GeoportalPage() {
   useLayoutEffect(() => {
     notifyMapResize();
   }, [showPotree, potreeUiMode]);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+    const unsub = subscribeGeoBIMComments((list) => {
+      useMapStore.getState().setComments(list);
+    });
+    return unsub;
+  }, []);
 
   if (showAdmin) {
     return (

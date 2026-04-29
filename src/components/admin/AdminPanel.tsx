@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import {
   Users,
@@ -11,6 +11,8 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import type { User, UserRole, Project } from '@/types';
+import { isFirebaseConfigured } from '@/lib/firebase';
+import { fetchAppUsersFromFirestore } from '@/services/appUsers';
 
 const MOCK_USERS: User[] = [
   { id: '1', name: 'Administrador TEMOCSA', email: 'admin@temocsa.com', role: 'admin' },
@@ -50,7 +52,24 @@ interface AdminPanelProps {
 
 export function AdminPanel({ onBack }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<'users' | 'projects'>('users');
+  const [adminUsers, setAdminUsers] = useState<User[]>(MOCK_USERS);
+  const [usersFromFirestore, setUsersFromFirestore] = useState(false);
   const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    if (!isFirebaseConfigured()) return;
+    let cancelled = false;
+    fetchAppUsersFromFirestore()
+      .then((rows) => {
+        if (cancelled || rows.length === 0) return;
+        setAdminUsers(rows);
+        setUsersFromFirestore(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (user?.role !== 'admin') {
     return (
@@ -106,9 +125,16 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
         {/* Content */}
         {activeTab === 'users' && (
           <div className="space-y-4">
+            {isFirebaseConfigured() && (
+              <p className="text-xs text-temocsa-gray-500">
+                {usersFromFirestore
+                  ? 'Lista sincronizada desde Firestore (colección app_users).'
+                  : 'Sin documentos en app_users: se muestran usuarios de demostración. Crea la colección en la consola de Firebase (ver instrucciones del equipo).'}
+              </p>
+            )}
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-temocsa-gray-300">
-                Usuarios registrados ({MOCK_USERS.length})
+                Usuarios registrados ({adminUsers.length})
               </h3>
               <button className="flex items-center gap-1.5 px-3 py-1.5 bg-temocsa-red hover:bg-temocsa-red-dark text-white text-xs font-medium rounded-lg transition-colors">
                 <Plus className="w-3.5 h-3.5" /> Nuevo usuario
@@ -134,7 +160,7 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {MOCK_USERS.map((u) => {
+                  {adminUsers.map((u) => {
                     const RoleIcon = ROLE_ICONS[u.role];
                     return (
                       <tr

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { LayerConfig, GeoPhoto, PointCloudSection, GeoBIMComment } from '@/types';
 import { BASEMAPS } from '@/data/basemaps';
 
@@ -32,6 +33,7 @@ interface MapState {
   setShowPotreeViewer: (show: boolean) => void;
   setPotreeUiMode: (mode: PotreeUiMode) => void;
   setSelectedPhoto: (photo: GeoPhoto | null) => void;
+  setComments: (comments: GeoBIMComment[]) => void;
   addComment: (comment: GeoBIMComment) => void;
   resolveComment: (commentId: string) => void;
   toggleSidebar: () => void;
@@ -43,83 +45,92 @@ interface MapState {
 
 const defaultBasemap = BASEMAPS[0]?.id ?? 'carto-dark';
 
-export const useMapStore = create<MapState>((set) => ({
-  layers: [
-    {
-      id: 'traza',
-      name: 'Traza (GeoJSON)',
-      type: 'vector',
-      visible: true,
-      opacity: 1,
-      source: VECTOR_GEOJSON_URL,
-      color: '#C8102E',
-    },
-    {
-      id: 'secciones',
-      name: 'Área LiDAR',
-      type: 'pointcloud',
-      visible: true,
-      opacity: 0.85,
-      color: '#3498DB',
-    },
-    {
-      id: 'fotos',
-      name: 'Fotos de obra',
-      type: 'photos',
-      visible: true,
-      opacity: 1,
-      color: '#F39C12',
-    },
-  ],
-  basemapId: defaultBasemap,
-  selectedSection: null,
-  showPotreeViewer: false,
-  potreeUiMode: 'docked',
-  selectedPhoto: null,
-  comments: [],
-  sidebarOpen: true,
-  activeTool: 'select',
-  measureStatus: null,
-  commentDraftCoord: null,
-  pulseCommentId: null,
-
-  setLayers: (layers) => set({ layers }),
-  toggleLayerVisibility: (layerId) =>
-    set((state) => ({
-      layers: state.layers.map((l) =>
-        l.id === layerId ? { ...l, visible: !l.visible } : l
-      ),
-    })),
-  setLayerOpacity: (layerId, opacity) =>
-    set((state) => ({
-      layers: state.layers.map((l) =>
-        l.id === layerId ? { ...l, opacity } : l
-      ),
-    })),
-  setBasemapId: (id) => set({ basemapId: id }),
-  setSelectedSection: (section) => set({ selectedSection: section }),
-  setShowPotreeViewer: (show) =>
-    set({
-      showPotreeViewer: show,
-      ...(show ? {} : { potreeUiMode: 'docked' as PotreeUiMode }),
-    }),
-  setPotreeUiMode: (mode) => set({ potreeUiMode: mode }),
-  setSelectedPhoto: (photo) => set({ selectedPhoto: photo }),
-  addComment: (comment) =>
-    set((state) => ({ comments: [...state.comments, comment] })),
-  resolveComment: (commentId) =>
-    set((state) => ({
-      comments: state.comments.map((c) =>
-        c.id === commentId ? { ...c, resolved: true } : c
-      ),
-    })),
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-  setActiveTool: (tool) =>
-    set({
-      activeTool: tool ?? 'select',
+export const useMapStore = create<MapState>()(
+  persist(
+    (set) => ({
+      layers: [
+        {
+          id: 'traza',
+          name: 'Traza (GeoJSON)',
+          type: 'vector',
+          visible: true,
+          opacity: 1,
+          source: VECTOR_GEOJSON_URL,
+          color: '#C8102E',
+        },
+        {
+          id: 'secciones',
+          name: 'Área LiDAR',
+          type: 'pointcloud',
+          visible: true,
+          opacity: 0.85,
+          color: '#3498DB',
+        },
+        {
+          id: 'fotos',
+          name: 'Fotos de obra',
+          type: 'photos',
+          visible: true,
+          opacity: 1,
+          color: '#F39C12',
+        },
+      ],
+      basemapId: defaultBasemap,
+      selectedSection: null,
+      showPotreeViewer: false,
+      potreeUiMode: 'docked',
+      selectedPhoto: null,
+      comments: [],
+      sidebarOpen: true,
+      activeTool: 'select',
+      measureStatus: null,
       commentDraftCoord: null,
+      pulseCommentId: null,
+
+      setLayers: (layers) => set({ layers }),
+      toggleLayerVisibility: (layerId) =>
+        set((state) => ({
+          layers: state.layers.map((l) =>
+            l.id === layerId ? { ...l, visible: !l.visible } : l
+          ),
+        })),
+      setLayerOpacity: (layerId, opacity) =>
+        set((state) => ({
+          layers: state.layers.map((l) =>
+            l.id === layerId ? { ...l, opacity } : l
+          ),
+        })),
+      setBasemapId: (id) => set({ basemapId: id }),
+      setSelectedSection: (section) => set({ selectedSection: section }),
+      setShowPotreeViewer: (show) =>
+        set({
+          showPotreeViewer: show,
+          ...(show ? {} : { potreeUiMode: 'docked' as PotreeUiMode }),
+        }),
+      setPotreeUiMode: (mode) => set({ potreeUiMode: mode }),
+      setSelectedPhoto: (photo) => set({ selectedPhoto: photo }),
+      setComments: (comments) => set({ comments }),
+      addComment: (comment) =>
+        set((state) => ({ comments: [...state.comments, comment] })),
+      resolveComment: (commentId) =>
+        set((state) => ({
+          comments: state.comments.map((c) =>
+            c.id === commentId ? { ...c, resolved: true } : c
+          ),
+        })),
+      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      setActiveTool: (tool) =>
+        set({
+          activeTool: tool ?? 'select',
+          commentDraftCoord: null,
+        }),
+      setMeasureStatus: (msg) => set({ measureStatus: msg }),
+      setCommentDraftCoord: (c) => set({ commentDraftCoord: c }),
+      setPulseCommentId: (id) => set({ pulseCommentId: id }),
     }),
-  setMeasureStatus: (msg) => set({ measureStatus: msg }),
-  setCommentDraftCoord: (c) => set({ commentDraftCoord: c }),
-  setPulseCommentId: (id) => set({ pulseCommentId: id }),
-}));
+    {
+      name: 'temocsa-map',
+      partialize: (state) => ({ comments: state.comments }),
+    }
+  )
+);
