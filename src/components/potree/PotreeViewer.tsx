@@ -19,6 +19,7 @@ export function PotreeViewer() {
   const setSelectedSection = useMapStore((s) => s.setSelectedSection);
 
   const [floatPos, setFloatPos] = useState({ left: 80, top: 88 });
+  const [iframeLoaded, setIframeLoaded] = useState(false);
   const floatDrag = useRef<{
     active: boolean;
     sx: number;
@@ -48,6 +49,11 @@ export function PotreeViewer() {
       window.removeEventListener('mouseup', onFloatUp);
     };
   }, [onFloatMove, onFloatUp]);
+
+  useEffect(() => {
+    // Reinicia el estado cada vez que se abre/cambia sección.
+    setIframeLoaded(false);
+  }, [showPotreeViewer, selectedSection?.id]);
 
   const handleClose = () => {
     setShowPotreeViewer(false);
@@ -145,11 +151,27 @@ export function PotreeViewer() {
 
   const frame = (
     <div className="relative min-h-0 flex-1 bg-black">
+      {!iframeLoaded && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 backdrop-blur-[1px]">
+          <div className="w-[min(92%,420px)] rounded-xl border border-temocsa-gray-700 bg-temocsa-gray-900/95 p-4 shadow-xl">
+            <p className="mb-2 text-sm font-medium text-white">
+              Cargando nube de puntos...
+            </p>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-temocsa-gray-700">
+              <div className="h-full w-full animate-pulse rounded-full bg-temocsa-info" />
+            </div>
+            <p className="mt-2 text-xs text-temocsa-gray-400">
+              Esto puede tardar un poco en web por el tamaño del octree.
+            </p>
+          </div>
+        </div>
+      )}
       <iframe
         src={iframeSrc}
         className="h-full w-full border-0"
         title={`Potree — ${selectedSection.name}`}
         allow="fullscreen"
+        onLoad={() => setIframeLoaded(true)}
       />
     </div>
   );
